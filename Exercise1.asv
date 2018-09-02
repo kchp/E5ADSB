@@ -34,8 +34,7 @@ e = zeros(1,N); % error signal
                 % fra FIR filtret)
 
 
-% Implementering af LMS algoritme
-% mangler bedre forklaring af hvad der sker i hver linje!!
+% implementering af LMS algoritme
 for n = M:N
    x = xin(n:-1:n-(M-1)); % udfyld delay linjen
    y(n) = W(:,n)'*x;      % beregn output fra FIR filter
@@ -62,6 +61,7 @@ xlabel('Iteration, n'); ylabel('e^2(n) [dB]');
 grid on;
 
 disp(['Identificeret system: ' num2str(round(wo',3))]);
+disp(Hvis det identificerede system ikke er optimalt, brug anden M og/eller u);
 
 figure;
 plot(n,d,n,y,n,e);
@@ -69,6 +69,3 @@ title('Iteration, n');
 legend('d(n)','y(n)','e(n)');
 grid on;
 
-%% 5. Prøv med andre værdier af M og u
-
-disp('Hvis det identificerede system ikke er optimalt, brug anden M og/eller u');
