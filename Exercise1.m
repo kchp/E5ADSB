@@ -35,10 +35,11 @@ e = zeros(1,N); % error signal
 
 
 % Implementering af LMS algoritme
-% mangler bedre forklaring af hvad der sker i hver linje!!
 for n = M:N
    x = xin(n:-1:n-(M-1)); % udfyld delay linjen
+                          % start sample n:dekrementer med 1:til n-(M-1)
    y(n) = W(:,n)'*x;      % beregn output fra FIR filter
+                          % W(:,n) : vælger alle rækker i kolonne n
    e(n) = d(n) - y(n);    % beregner fejlen mellem reference og aktuelt signal
    W(:,n+1) = W(:,n) + 2*u*e(n)*x; % opdater FIR koefficienter    
 end
