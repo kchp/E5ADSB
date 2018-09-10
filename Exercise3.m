@@ -1,10 +1,201 @@
-%%  Exercise 3
+%%  E5ADSB Exercise 3 - Image Processing
 %%  Opgave beskrivelse
 %  
+%   Øvelse 1:
+%   Arbejde med grey scale billeder i Matlab
+%
+%   Øvelse 2:
+%   Arbejde med farve billeder i Matlab
+%
+%   Øvelse 3:
+%   Billede forbedringer ved at bruge basis point transformation
 %   
 %% Setup
 close all; clear; clc;
 
-%% 
+%% Øvelse 1
+% 1. Indlæs billede
+I = imread('cameraman.tif');
 
+% 2. Hvad er størrelsen og data type af I og hvor mange bytes tager det i
+%    hukommelsen? Forklar.
+disp('Information om grey scale billedets original format');
+whos I;
+
+% Billedet er indlæst som et 256x256 matrix, med data typen uint8 - 8-bit
+% unsigned intergers, det optager 65536 bytes i hukommelsen.
+
+% 3. Vis billedet
+% begge disse muligheder kan anvendes til at vise billedet
+imshow(I);
+title('Original image');
+%imtool(I);
+
+% 4. Find min og max pixel værdi i billedet
+
+disp('Find minimum og maximum pixel værdi i billedet');
+maximum = max(max(I));
+[xmax,ymax] = find(I==maximum);
+disp(['max værdi = ' num2str(maximum)]);
+disp(['index = [' num2str(xmax) ',' num2str(ymax) ']']);
+
+% find minimum
+minimum = min(min(I));
+[xmin,ymin] = find(I==minimum);
+disp(['min værdi = ' num2str(minimum)]);
+disp(['index = [' num2str(xmin(1)) ',' num2str(ymin(1)) ']'...
+     ', [' num2str(xmin(2)) ',' num2str(ymin(2)) ']'...
+     ', [' num2str(xmin(3)) ',' num2str(ymin(3)) ']'...
+     ', [' num2str(xmin(4)) ',' num2str(ymin(4)) ']']);
+
+% 5. Konverter billedet fra uint8 til doubles i range [0;1]
+I2 = im2double(I);
+disp('Information om billedet efter konvertering til double');
+whos I2;
+
+% 6. Hvad er resultatet af:
+%   a. adderer en positiv konstant (skalar) til billedet?
+I2add = I2 + 0.25;
+figure;
+subplot(1,2,1), imshow(I);
+title('Original image');
+subplot(1,2,2), imshow(I2add);
+title('Increased brightness');
+% Ved at adderer en skalar bliver billedet lysere.
+% Når en værdi ligges til/trækkes fra et billede ændres ved billedets
+% brigtness!
+
+%   b. trække en positiv konstant (skalar) fra billedet?
+I2sub = I2 - 0.25;
+figure;
+subplot(1,2,1), imshow(I);
+title('Original image');
+subplot(1,2,2), imshow(I2sub);
+title('Decreased brightness');
+% Ved at trække en skalar fra, bliver billedet mørkere (brightness)
+
+%   c. gange billedet med en positiv konstant større end 1?
+I2m1 = I2.*1.25;
+figure;
+subplot(1,2,1), imshow(I);
+title('Original image');
+subplot(1,2,2), imshow(I2m1);
+title('Increased contrast');
+% Ved at gange med en skalar større end 1 øges kontrasten i billedet, de lyse
+% farver bliver tydeligere og de mørke forbliver næsten uberørt.
+% Når et billede bliver ganget med en værdi ændres ved billedets kontrast!
+
+%   d. gange billedet med en positiv konstant mindre end 1?
+I2m2 = I2.*0.25;
+figure;
+subplot(1,2,1), imshow(I);
+title('Original image');
+subplot(1,2,2), imshow(I2m2);
+title('Decreased contrast');
+% Ved at gange med en skalar mindre end 1 sænkes kontrasten i billedet, de lyse
+% farver bliver mørkere og de mørke forbliver næsten uberørt (kontrast)
+
+% 7. Beregn billedets negativ. Vis det i samme figur som det originale med
+%    subplot
+I2neg = -I2 + 1.0;
+figure;
+subplot(1,2,1), imshow(I);
+title('Original image');
+subplot(1,2,2), imshow(I2neg);
+title('Negative image');
+
+% 8. Konverter det negative billede til uint8 og gem det som en fil med
+%    imwrite()
+Ineg = uint8(255*mat2gray(I2neg));
+imwrite(Ineg,'cameraman_negative.tif','tiff');
+
+% 9. Lav et udsnit af billedet I (50x50 pixels), der indeholder
+%    kameramandens hoved
+Iface = I2(35:85,90:140);
+figure, imshow(Iface);
+title('Cropped image');
+
+% 10. Formindsk det originale billede til halv størrelse i begge retninger,
+%     ved at tage hver anden pixel i begge retninger. Vis og gem billedet
+Ismall = I2(1:2:end,1:2:end);
+figure, imshow(Ismall);
+title('Half-sized image');
+
+
+%% Øvelse 2
+% 1. Indlæs billed
+J = imread('pepperswithsquares.bmp');
+
+% 2. Hvad er størrelse og data type for billedet?
+disp('Information om farve billedets original format');
+whos J;
+% Billedet er et matrix med størrelse 384x512x3 af data typen uint8.
+
+% 3. Træk rød grøn og blå komponenter fra billedet og vis dem som grey
+%    scale billeder i subplots som i figur 2.4, s. 25 i Marques. Forklar.
+Jred = J(:,:,1);
+Jgreen = J(:,:,2);
+Jblue = J(:,:,3);
+figure, subplot(2,2,1); imshow(J), title('Original image');
+subplot(2,2,2); imshow(Jred), title('Red');
+subplot(2,2,3); imshow(Jgreen), title('Green');
+subplot(2,2,4); imshow(Jblue), title('Blue');
+% Arrayet for hver farve indeholder en 8-bit værdi for hvormeget af farven
+% der skal anvendes i det punkt, angivet i skalen [0:255]. Da det er 8-bit
+% læses dette som gråskala farve. Først når alle 3 farver kombineres til
+% 24-bit angiver de en værdi der svare til 16M farve scalaen.
+
+% 4. Konverter det originale billede til gråskala ved at tage
+%    middelværdien (mean) af alle tre farve lag.
+Jgrey = rgb2gray(J); % indbygget RGB-til-gråskala
+%Jconv = mean(double(Jred))+mean(double(Jgreen))+mean(double(Jblue));
+%Jgrey = uint8(Jconv);
+figure, imshow(Jgrey), title('Grey scale convertion');
+
+
+%% Øvelse 3
+% 1. Indlæs billed
+K = imread('washed_out_aerial_image.tif');
+
+% 2. Vis billedet
+figure, imshow(K), title('Original image');
+
+% 3. Find og vis histogrammet for billedet med imhist(). Forklar.
+figure, imhist(K), title('Image histogram');
+% Histogrammet viser at der er en tydelig overvægt af lyse farver i
+% billedet.
+
+% 4. Anvend Power Law Tranformation (også kaldet gamma korrektion), se
+%    Marques kapitel 8.3.3. Eksperimenter med forskellige værdier af y
+%    indenfor [1:10]. Hvilken er bedst?
+Kd = im2double(K);
+
+Kd1 = Kd.^2.5;
+Kd2 = Kd.^4.8;
+Kd3 = Kd.^7.3;
+figure, subplot(2,2,1), imshow(Kd), title('Original');
+subplot(2,2,2), imshow(Kd1), title('\gamma = 2.5');
+subplot(2,2,3), imshow(Kd2), title('\gamma = 4.8');
+subplot(2,2,4), imshow(Kd3), title('\gamma = 7.3');
+% Det bedste resultat af gamme korrektion ser ud til at være mellem
+% [2.5:4.8]
+Kdoptimum = Kd.^3.3;
+figure, imshow(Kdoptimum), title('Bedste gamme korrektion');
+
+% 5. Vis histogrammet for det forbedrede billede
+figure, imhist(Kdoptimum), title('Image histogram');
+% Histogrammet for det optimerede billede viser at farverne nu er mere
+% lige fordelt over hele farve spektret.
+
+% 6. Prøv også værdier af y indenfor [0:1]. Forklar.
+Kdl1 = Kd.^0.2;
+Kdl2 = Kd.^0.5;
+Kdl3 = Kd.^0.8;
+figure, subplot(2,2,1), imshow(Kd), title('Original');
+subplot(2,2,2), imshow(Kdl1), title('\gamma = 0.2');
+subplot(2,2,3), imshow(Kdl2), title('\gamma = 0.5');
+subplot(2,2,4), imshow(Kdl3), title('\gamma = 0.8');
+% Når der anvendes en gamma værdi der er lavere end 1 øges intensiteten af
+% de lyse farve jo lavere værdi der anvendes, som det kan ses giver værdien
+% på 0.2 det værste resultat
 
