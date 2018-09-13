@@ -147,8 +147,9 @@ subplot(2,2,4); imshow(Jblue), title('Blue');
 
 % 4. Konverter det originale billede til gråskala ved at tage
 %    middelværdien (mean) af alle tre farve lag.
-%Jgrey = rgb2gray(J); % indbygget RGB-til-gråskala
-Jgrey = mean(double(J)/255,3);
+Jgrey = rgb2gray(J); % indbygget RGB-til-gråskala
+%Jconv = mean(double(J))+mean(double(Jgreen))+mean(double(Jblue));
+%Jgrey = uint8(Jconv);
 figure, imshow(Jgrey), title('Grey scale convertion');
 
 
