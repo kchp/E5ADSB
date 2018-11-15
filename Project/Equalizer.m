@@ -83,65 +83,66 @@ xlabel('Frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
 % lavet med hvidstøjssignal
 N = 2^19;
 f = (0:N-1)*(fs/N);
+n = 0:N-1;
+Ts = 1/fs;
 
 XNOISE = fft(noise,N);
 XRNOISE = fft(x,N);
 
-Y = XRNOISE./XNOISE;
+H = XRNOISE./XNOISE;
 
 % figure;
 % semilogx(f,20*log10(abs(Y)));
 % title('Overføringsfunktion');
 % xlabel('Frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
 
-MIDY = smoothMag(abs(Y'),499);
+MIDY = smoothMag(abs(H'),499);
 figure;
 semilogx(f,20*log10(abs(MIDY)));
 title('Overføringsfunktion (midlet hvidstøj)');
 xlabel('Frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
 
-y = ifft(Y);
+h = ifft(H);
 
-midy = smoothMag(abs(y'),499);
 figure;
-semilogx(f,20*log10(abs(midy)));
+plot(n*Ts,h);
 title('Impulsrespons (hvidstøj)');
-xlabel('[]'), xlim([20 20e3]), ylabel('[]');
+xlabel('[]'), ylabel('[]');
 
 %% Overføringsfunktion (højtaler/rum/mikrofon)
 % lavet med chirp signal
 Nchirp = 2^20;
 fchirp = (0:Nchirp-1)*(fs/Nchirp);
+nchirp = 0:Nchirp-1;
 
 XCHIRP = fft(linchirp,Nchirp);
 XRCHIRP = fft(z,Nchirp);
 
-YCHIRP = XRCHIRP./XCHIRP;
+HCHIRP = XRCHIRP./XCHIRP;
 
 % figure;
 % semilogx(fchirp,20*log10(abs(YCHIRP)));
 % title('Overføringsfunktion (chirp)');
 % xlabel('Frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
 
-mYCHIRP = smoothMag(abs(YCHIRP'),499);
+mYCHIRP = smoothMag(abs(HCHIRP'),499);
 figure;
 semilogx(fchirp,20*log10(abs(mYCHIRP)));
 title('Overføringsfunktion (midlet chirp)');
 xlabel('Frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
 
-ychirp = ifft(YCHIRP);
+hchirp = ifft(HCHIRP);
 
-mychirp = smoothMag(abs(ychirp'),499);
 figure;
-semilogx(fchirp,20*log10(abs(mychirp)));
+plot(nchirp*Ts,hchirp);
 title('Impulsrespons (chirp)');
-xlabel('[]'), xlim([20 20e3]), ylabel('[]');
+xlabel('[]'), ylabel('[]');
 
 %% Filter (hvidstøjs filter)
 
 [orig,Fsorig] = audioread('Test_sample.wav');
-ysound = filter(midy,1,orig);
-ynoise = filter(midy,1,noise);
+ysound = filter(h,1,orig);
+ynoise = filter(h,1,noise);
 
 Norig = length(orig);
 YSOUND = fft(ysound);
@@ -172,8 +173,8 @@ xlabel('frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
 
 %% Filter (chirp filter)
 
-y2sound = filter(mychirp,1,orig);
-yfchirp = filter(mychirp,1,linchirp);
+y2sound = filter(hchirp,1,orig);
+yfchirp = filter(hchirp,1,linchirp);
 
 Y2SOUND = fft(y2sound);
 P2_orig = abs(Y2SOUND).^2/Norig;
