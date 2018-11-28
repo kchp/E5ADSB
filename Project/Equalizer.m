@@ -20,6 +20,20 @@ close all; clear; clc;
 linchirp = audioread('linchirp.wav');
 x = audioread('RecNoise.wav');
 z = audioread('RecLinChirp.wav');
+%% Signal delay
+%
+
+XCORRnoise = xcorr(x,noise);
+XCORRchirp = xcorr(z,linchirp);
+[~,DInoise] = max(XCORRnoise);
+[~,DIchirp] = max(XCORRchirp);
+Delay_noise = DInoise - length(x);
+Delay_chirp = DIchirp - length(z);
+
+noise = noise(44100:end);
+linchirp = linchirp(44100:end);
+x = x(Delay_noise:length(noise));
+z = z(Delay_chirp:length(linchirp));
 
 %% Analyse
 % Indledende analyse af de originale og optagede signaler
@@ -90,6 +104,7 @@ XNOISE = fft(noise,N);
 XRNOISE = fft(x,N);
 
 H = XRNOISE./XNOISE;
+%INV_H = XNOISE./XRNOISE;
 
 % figure;
 % semilogx(f,20*log10(abs(Y)));
@@ -107,7 +122,7 @@ h = ifft(H);
 figure;
 plot(n*Ts,h);
 title('Impulsrespons (hvidstøj)');
-xlabel('[]'), ylabel('[]');
+xlabel('[]'), ylabel('Tid[]');
 
 %% Overføringsfunktion (højtaler/rum/mikrofon)
 % lavet med chirp signal
@@ -200,10 +215,55 @@ figure;
 semilogx(f_rnoise,10*log10(mP_rlch));
 title('Amplitude plot (chirp filter [optaget chirp])');
 xlabel('frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
+%% Fixed prefiltering
 
-%% LMS implementering
-%
+Music_nim = audioread('Filtered_music_noise_impulse.wav');
+Music_cim = audioread('Filtered_music_chirp_impulse.wav');
 
-XCORRdelay = xcorr(z,linchirp);
-[~,Dindex] = max(XCORRdelay);
-Delay = Dindex - length(z);
+% test
+% INV_H = H.^-1;
+% inv_h = ifft(INV_H);
+% Music = filter(inv_h,1,Music_nim);
+% soundsc(Music,Fsorig);
+
+
+%% test music
+n = 0:Norig-1;
+Mu = 0.01;
+M = 150;
+[Test,W,J,e,ylms] = lms(Music_nim,orig,Mu,M);
+Music = filter(Test,1,Music_nim);
+%soundsc(Music,Fsorig);
+
+figure;
+subplot(211),plot(n,W);
+%subplot(211),plot(n,W(265,:),'-o',n,W(513,:),'-s');
+xlabel('n');
+title('Convergence of filter coefficients');
+%legend('w_0(n)','w_1(n)','Location','NorthWest');
+grid
+subplot(212),plot(n,10*log10(J))
+xlabel('n'),ylabel('J(w)')
+title('MSE')
+grid
+
+%% test chirp
+n = 0:length(linchirp)-1;
+Mu = 0.01;
+M = 150;
+ztest = z(1:length(linchirp));
+[Test,W,J,e,ylms] = lms(ztest,linchirp,Mu,M);
+Music = filter(Test,1,ztest);
+%soundsc(Music,fs);
+
+figure;
+subplot(211),plot(n,W);
+%subplot(211),plot(n,W(265,:),'-o',n,W(513,:),'-s');
+xlabel('n');
+title('Convergence of filter coefficients');
+%legend('w_0(n)','w_1(n)','Location','NorthWest');
+grid
+subplot(212),plot(n,10*log10(J))
+xlabel('n'),ylabel('J(w)')
+title('MSE')
+grid
