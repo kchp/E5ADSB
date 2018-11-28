@@ -1,7 +1,6 @@
 %%  E5ADSB projekt
 %%  Opgave beskrivelse
-%  
-% 
+%   
 %   
 %   Nødvendig filer til dette script:
 %   Equalizer.m (denne fil)
@@ -15,255 +14,292 @@
 %% Setup
 close all; clear; clc;
 
-% Indlæsning af originale og optagede lydsignaler, samt samplerate
-[noise, fs] = audioread('whitenoise.wav');
-linchirp = audioread('linchirp.wav');
-x = audioread('RecNoise.wav');
-z = audioread('RecLinChirp.wav');
-%% Signal delay
-%
+% Indlæsning af originale og optagede lydsignaler samt samplerate
+[noise, Fs] = audioread('whitenoise.wav');
+chirp = audioread('linchirp.wav');
+Rec_noise = audioread('RecNoise.wav');
+Rec_chirp = audioread('RecLinChirp.wav');
 
-XCORRnoise = xcorr(x,noise);
-XCORRchirp = xcorr(z,linchirp);
+% Indlæsning af musik sample og samplerate
+[music,Fsmusic] = audioread('Test_sample.wav');
+
+%% Signal delay
+% For at kunne bruge LMS algoritmen senere i scriptet, er det nødvendigt at
+% have de originale og optage signaler synkroniseret. For at synkronisere
+% signalerne findes først korrelationen mellem signalerne, indekset for
+% korrelationen minus længden af det originale signal svare til
+% forsinkelsen mellem signalerne.
+XCORRnoise = xcorr(Rec_noise,noise);
+XCORRchirp = xcorr(Rec_chirp,chirp);
 [~,DInoise] = max(XCORRnoise);
 [~,DIchirp] = max(XCORRchirp);
-Delay_noise = DInoise - length(x);
-Delay_chirp = DIchirp - length(z);
+Delay_noise = DInoise - length(Rec_noise);
+Delay_chirp = DIchirp - length(Rec_chirp);
 
+
+%%
+% Tilpas signaler
+% De original signalerne er skabt med en indlagt forsinkelse på 1 sekund i
+% starten, dette sekund skæres væk ved at starte signalet 1 sekund inde.
 noise = noise(44100:end);
-linchirp = linchirp(44100:end);
-x = x(Delay_noise:length(noise));
-z = z(Delay_chirp:length(linchirp));
+chirp = chirp(44100:end);
 
-%% Analyse
+
+%%
+% De optagede signaler indeholder forsinkelsen på 1 sekund samt
+% forsinkelsen mellem signalerne, ligeledes kørte optagelserne i længere
+% tid end original signalerne blev afspillet. For kunne bruge LMS
+% algoritmen skal de anvendte signaler have samme længde, derfor kortes
+% optagede signaler af til at have samme længde som de originale afspillede
+% signaler.
+Rec_noise = Rec_noise(44100+Delay_noise:length(noise)+44100+Delay_noise-1);
+Rec_chirp = Rec_chirp(44100+Delay_chirp:length(chirp)+44100+Delay_chirp-1);
+
+%% Analyse af signaler
 % Indledende analyse af de originale og optagede signaler
 
 % Originale signaler
 % find længden af signalerne
 n_noise = length(noise);
-n_lch = length(linchirp);
+n_chirp = length(chirp);
 
-% normaliser x-aksen så signalerne kan plottes som frekvens
-f_noise = (0:n_noise-1)*(fs/n_noise);
-f_lch = (0:n_lch-1)*(fs/n_lch);
-
-% beregn FFT 
+% Beregn FFT 
 NOISE = fft(noise);
-LCH = fft(linchirp);
+CHIRP = fft(chirp);
 
-% 
+% Beregn amplitude spektret af signalerne
 P_noise = abs(NOISE).^2/n_noise;
-P_lch = abs(LCH).^2/n_lch;
+P_chirp = abs(CHIRP).^2/n_chirp;
 
 
-% optagede signaler
-n_rnoise = length(x);
-n_rlch = length(z);
+% Optagede signaler
+n_rec_noise = length(Rec_noise);
+n_rec_chirp = length(Rec_chirp);
 
-f_rnoise = (0:n_rnoise-1)*(fs/n_rnoise);
-f_rlch = (0:n_rlch-1)*(fs/n_rlch);
+X = fft(Rec_noise);
+Z = fft(Rec_chirp);
 
-X = fft(x);
-Z = fft(z);
+P_rec_noise = abs(X).^2/n_rec_noise;
+P_rec_chirp = abs(Z).^2/n_rec_chirp;
 
-P_rnoise = abs(X).^2/n_rnoise;
-P_rlch = abs(Z).^2/n_rlch;
 
-% plot
+%% Slet
+% ABE!
+
+% Plot
+% Normaliser af x-aksen så signalerne kan plottes som frekvens
+f_noise = (0:n_noise-1)*(Fs/n_noise);
+f_chirp = (0:n_chirp-1)*(Fs/n_chirp);
+f_rnoise = (0:n_rec_noise-1)*(Fs/n_rec_noise);
+f_rchirp = (0:n_rec_chirp-1)*(Fs/n_rec_chirp);
+
 figure;
 subplot(3,1,1), plot(noise);
 title('Original hvidstøj');
-xlabel('tid [s]'), ylabel('Amplitude');
+xlabel('tid [s]'), ylabel('Amplitude'), grid;
 subplot(3,1,2), plot(f_noise,10*log10(P_noise));
 title('Amplitude plot (hvidstøj)');
-xlabel('frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
-subplot(3,1,3), plot(f_rnoise,10*log10(P_rnoise));
+xlabel('frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]'), grid;
+subplot(3,1,3), plot(f_rnoise,10*log10(P_rec_noise));
 title('Amplitude plot (optaget hvidstøj)');
-xlabel('Frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
+xlabel('Frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]'), grid;
 
 figure;
-subplot(3,1,1), plot(linchirp);
+subplot(3,1,1), plot(chirp);
 title('Original chirp');
-xlabel('tid [s]'), ylabel('Amplitude');
-subplot(3,1,2), plot(f_lch,10*log10(P_lch));
+xlabel('tid [s]'), ylabel('Amplitude'), grid;
+subplot(3,1,2), plot(f_chirp,10*log10(P_chirp));
 title('Amplitude plot (chirp)');
-xlabel('frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
-subplot(3,1,3), plot(f_rlch,10*log10(P_rlch));
+xlabel('frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]'), grid;
+subplot(3,1,3), plot(f_rchirp,10*log10(P_rec_chirp));
 title('Amplitude plot (optaget chirp)');
-xlabel('Frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
-
+xlabel('Frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]'), grid;
 
 %% Overføringsfunktion (højtaler/rum/mikrofon)
-% lavet med hvidstøjssignal
+% Lavet med hvidstøjssignal
 N = 2^19;
-f = (0:N-1)*(fs/N);
 n = 0:N-1;
-Ts = 1/fs;
+Ts = 1/Fs;
 
-XNOISE = fft(noise,N);
-XRNOISE = fft(x,N);
+% Beregn overføringsfunktion
+TF_NOISE = fft(noise,N);
+TF_RECNOISE = fft(Rec_noise,N);
+H_NOISE = TF_RECNOISE./TF_NOISE;
 
-H = XRNOISE./XNOISE;
-%INV_H = XNOISE./XRNOISE;
+% Bereng impulsrespons
+h_noise = ifft(H_NOISE);
 
-% figure;
-% semilogx(f,20*log10(abs(Y)));
-% title('Overføringsfunktion');
-% xlabel('Frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
 
-MIDY = smoothMag(abs(H'),499);
+%% Slet
+% ABE!
+
+% Plot
+% Normalisering af x-aksen så signalerne kan plottes som frekvens
+f_TF_noise = (0:N-1)*(Fs/N);
+
+% Midling af overføringsfunktion for at give en pænere graf
+MID_H_NOISE = smoothMag(abs(H_NOISE'),499);
+
 figure;
-semilogx(f,20*log10(abs(MIDY)));
-title('Overføringsfunktion (midlet hvidstøj)');
-xlabel('Frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
-
-h = ifft(H);
+semilogx(f_TF_noise,20*log10(abs(MID_H_NOISE)));
+title('Overføringsfunktion (midlet hvidstøj)'), xlim([20 20e3]);
+xlabel('Frekvens [Hz]'), ylabel('Amplitude [dB]'), grid;
 
 figure;
-plot(n*Ts,h);
-title('Impulsrespons (hvidstøj)');
-xlabel('[]'), ylabel('Tid[]');
+plot(n*Ts,h_noise);
+title('Impulsrespons (hvidstøj)'), xlabel('[]'), ylabel('Tid[]'), grid;
 
 %% Overføringsfunktion (højtaler/rum/mikrofon)
-% lavet med chirp signal
+% Lavet med chirp signal
 Nchirp = 2^20;
-fchirp = (0:Nchirp-1)*(fs/Nchirp);
 nchirp = 0:Nchirp-1;
 
-XCHIRP = fft(linchirp,Nchirp);
-XRCHIRP = fft(z,Nchirp);
+TF_CHIRP = fft(chirp,Nchirp);
+TF_RECCHIRP = fft(Rec_chirp,Nchirp);
+H_CHIRP = TF_RECCHIRP./TF_CHIRP;
 
-HCHIRP = XRCHIRP./XCHIRP;
+h_chirp = ifft(H_CHIRP);
 
-% figure;
-% semilogx(fchirp,20*log10(abs(YCHIRP)));
-% title('Overføringsfunktion (chirp)');
-% xlabel('Frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
 
-mYCHIRP = smoothMag(abs(HCHIRP'),499);
-figure;
-semilogx(fchirp,20*log10(abs(mYCHIRP)));
-title('Overføringsfunktion (midlet chirp)');
-xlabel('Frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
+%% Slet
+% ABE!
 
-hchirp = ifft(HCHIRP);
+% Plot
+f_TF_chirp = (0:Nchirp-1)*(Fs/Nchirp);
+mYCHIRP = smoothMag(abs(H_CHIRP'),499);
 
 figure;
-plot(nchirp*Ts,hchirp);
-title('Impulsrespons (chirp)');
-xlabel('[]'), ylabel('[]');
-
-%% Filter (hvidstøjs filter)
-
-[orig,Fsorig] = audioread('Test_sample.wav');
-ysound = filter(h,1,orig);
-ynoise = filter(h,1,noise);
-
-Norig = length(orig);
-YSOUND = fft(ysound);
-f_orig = (0:Norig-1)*(Fsorig/Norig);
-P_orig = abs(YSOUND).^2/Norig;
-mP_orig = smoothMag(P_orig',499);
-
-YNOISE = fft(ynoise);
-P_ynoise = abs(YNOISE).^2/n_noise;
-mP_ynoise = smoothMag(P_ynoise',499);
-
-mP_rnoise = smoothMag(P_rnoise',499);
+semilogx(f_TF_chirp,20*log10(abs(mYCHIRP)));
+title('Overføringsfunktion (midlet chirp)'), xlim([20 20e3]);
+xlabel('Frekvens [Hz]'), ylabel('Amplitude [dB]'), grid;
 
 figure;
-semilogx(f_orig,10*log10(mP_orig));
+plot(nchirp*Ts,h_chirp);
+title('Impulsrespons (chirp)'), xlabel('[]'), ylabel('[]'), grid;
+
+%% Filtrering (Hvidstøjs filter)
+% Filtrering af hhv. musik sample og hvidstøjssignal med impulsrespons
+% genereret udfra hvidstøjssignalet. Dette giver en simulering af at optage
+% signalerne i det samme rum som de originale optagelser er lavet i.
+Sim_music_noise = filter(h_noise,1,music);
+Sim_noise = filter(h_noise,1,noise);
+
+N_music = length(music);
+SIM_MUSIC_NOISE = fft(Sim_music_noise);
+P_SIM_MUSIC_NOISE = abs(SIM_MUSIC_NOISE).^2/N_music;
+
+SIM_NOISE = fft(Sim_noise);
+P_SIM_NOISE = abs(SIM_NOISE).^2/n_noise;
+
+
+%% Slet
+% ABE!
+
+% Plot
+% Normaliser af x-aksen så signalerne kan plottes som frekvens
+f_sim_music = (0:N_music-1)*(Fsmusic/N_music);
+
+% Midling af amplitude spektret, for at give en pænere graf
+mid_P_SIM_MUSIC = smoothMag(P_SIM_MUSIC_NOISE',499);
+mid_P_SIM_NOISE = smoothMag(P_SIM_NOISE',499);
+mid_P_REC_NOISE = smoothMag(P_rec_noise',499);
+
+figure;
+semilogx(f_sim_music,10*log10(mid_P_SIM_MUSIC));
 title('Amplitude plot (hvidstøjs filter [musik])');
-xlabel('frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
+xlabel('frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]'), grid;
 
 figure;
-semilogx(f_noise,10*log10(mP_ynoise));
+semilogx(f_noise,10*log10(mid_P_SIM_NOISE));
 title('Amplitude plot (hvidstøjs filter [hvidstøjs])');
-xlabel('frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
+xlabel('frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]'), grid;
 
 figure;
-semilogx(f_rnoise,10*log10(mP_rnoise));
+semilogx(f_rnoise,10*log10(mid_P_REC_NOISE));
 title('Amplitude plot (hvidstøjs filter [optaget hvidstøjs])');
-xlabel('frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
+xlabel('frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]'), grid;
 
-%% Filter (chirp filter)
+%% Filtrering (Chirp filter)
+% Filtrering af hhv. musik sample og chirpsignal med impulsrespons
+% genereret udfra chirpsignalet. Dette giver en simulering af at optage
+% signalerne i det samme rum som de originale optagelser er lavet i.
+Sim_music_chirp = filter(h_chirp,1,music);
+Sim_chirp = filter(h_chirp,1,chirp);
 
-y2sound = filter(hchirp,1,orig);
-yfchirp = filter(hchirp,1,linchirp);
+SIM_MUSIC_CHIRP = fft(Sim_music_chirp);
+P_SIM_MUSIC_CHIRP = abs(SIM_MUSIC_CHIRP).^2/N_music;
 
-Y2SOUND = fft(y2sound);
-P2_orig = abs(Y2SOUND).^2/Norig;
-mP2_orig = smoothMag(P2_orig',499);
+SIM_CHIRP = fft(Sim_chirp);
+P_SIM_CHIRP = abs(SIM_CHIRP).^2/n_chirp;
 
-YFCHIRP = fft(yfchirp);
-P_yfchirp = abs(YFCHIRP).^2/n_lch;
-mP_yfchirp = smoothMag(P_yfchirp',499);
 
-mP_rlch = smoothMag(P_rlch',499);
+%% Slet
+% ABE!
+
+% Plot
+mid_P_SIM_MUSIC_CHIRP = smoothMag(P_SIM_MUSIC_CHIRP',499);
+mid_P_SIM_CHIRP = smoothMag(P_SIM_CHIRP',499);
+mid_P_REC_CHIRP = smoothMag(P_rec_chirp',499);
 
 figure;
-semilogx(f_orig,10*log10(mP2_orig));
+semilogx(f_sim_music,10*log10(mid_P_SIM_MUSIC_CHIRP));
 title('Amplitude plot (chirp filter [musik])');
-xlabel('frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
+xlabel('frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]'), grid;
 
 figure;
-semilogx(f_noise,10*log10(mP_yfchirp));
+semilogx(f_noise,10*log10(mid_P_SIM_CHIRP));
 title('Amplitude plot (chirp filter [chirp])');
-xlabel('frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
+xlabel('frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]'), grid;
 
 figure;
-semilogx(f_rnoise,10*log10(mP_rlch));
+semilogx(f_rnoise,10*log10(mid_P_REC_CHIRP));
 title('Amplitude plot (chirp filter [optaget chirp])');
-xlabel('frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]');
+xlabel('frekvens [Hz]'), xlim([20 20e3]), ylabel('Amplitude [dB]'), grid;
+
 %% Fixed prefiltering
+% Gemmer de simulerede musik samples, så de kan bruges senere uden at kører
+% hele scriptet igennem. 
+% audiowrite('Filtered_music_noise_impulse.wav',Sim_music_noise,Fsmusic);
+% audiowrite('Filtered_music_chirp_impulse.wav',Sim_music_chirp,Fsmusic);
 
-Music_nim = audioread('Filtered_music_noise_impulse.wav');
-Music_cim = audioread('Filtered_music_chirp_impulse.wav');
+%% LMS på simuleret optagelse
+% LMS algoritmen udført på simuleret musik optagelse lavet med hvidstøj
+n = 0:N_music-1;
+Mu = 0.01;  % Stepsize
+M = 20;     % Antal koefficienter
+[koef_music,W,J,~,~] = lms(Sim_music_noise,music,Mu,M);
+LMS_music = filter(koef_music,1,Sim_music_noise);
+% soundsc(LMS_music,Fsorig);
 
-% test
-% INV_H = H.^-1;
-% inv_h = ifft(INV_H);
-% Music = filter(inv_h,1,Music_nim);
-% soundsc(Music,Fsorig);
 
+%% Slet
+% ABE!
 
-%% test music
-n = 0:Norig-1;
-Mu = 0.01;
-M = 150;
-[Test,W,J,e,ylms] = lms(Music_nim,orig,Mu,M);
-Music = filter(Test,1,Music_nim);
-%soundsc(Music,Fsorig);
-
+% Plot
 figure;
-subplot(211),plot(n,W);
-%subplot(211),plot(n,W(265,:),'-o',n,W(513,:),'-s');
-xlabel('n');
-title('Convergence of filter coefficients');
-%legend('w_0(n)','w_1(n)','Location','NorthWest');
-grid
-subplot(212),plot(n,10*log10(J))
-xlabel('n'),ylabel('J(w)')
-title('MSE')
-grid
+subplot(211), plot(n,W);
+xlabel('n'), title('Convergence of filter coefficients');
+grid;
+subplot(212),plot(n,10*log10(J));
+xlabel('n'), ylabel('J(w)'), title('MSE'), grid;
 
-%% test chirp
-n = 0:length(linchirp)-1;
+%% LMS på chirp signal
+% LMS algoritmen udført på optaget chirp signal
+n = 0:length(chirp)-1;
 Mu = 0.01;
-M = 150;
-ztest = z(1:length(linchirp));
-[Test,W,J,e,ylms] = lms(ztest,linchirp,Mu,M);
-Music = filter(Test,1,ztest);
-%soundsc(Music,fs);
+M = 20;
+[koef_chirp,W,J,~,~] = lms(Rec_chirp,chirp,Mu,M);
+LMS_chirp = filter(koef_chirp,1,Rec_chirp);
+% soundsc(LMS_chirp,Fs);
 
+
+%% Slet
+% ABE!
+
+% Plot
 figure;
-subplot(211),plot(n,W);
-%subplot(211),plot(n,W(265,:),'-o',n,W(513,:),'-s');
-xlabel('n');
-title('Convergence of filter coefficients');
-%legend('w_0(n)','w_1(n)','Location','NorthWest');
-grid
-subplot(212),plot(n,10*log10(J))
-xlabel('n'),ylabel('J(w)')
-title('MSE')
-grid
+subplot(211), plot(n,W);
+xlabel('n'), title('Convergence of filter coefficients');
+grid;
+subplot(212), plot(n,10*log10(J));
+xlabel('n'), ylabel('J(w)'), title('MSE'), grid;
