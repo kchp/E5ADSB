@@ -83,8 +83,8 @@ P_rec_noise = abs(X).^2/n_rec_noise;
 P_rec_chirp = abs(Z).^2/n_rec_chirp;
 
 
-%% Slet
-% ABE!
+%% Sektion til formatering
+% Linje til formatering
 
 % Plot
 % Normaliser af x-aksen så signalerne kan plottes som frekvens
@@ -130,8 +130,8 @@ H_NOISE = TF_RECNOISE./TF_NOISE;
 h_noise = ifft(H_NOISE);
 
 
-%% Slet
-% ABE!
+%% Sektion til formatering
+% Linje til formatering
 
 % Plot
 % Normalisering af x-aksen så signalerne kan plottes som frekvens
@@ -161,8 +161,8 @@ H_CHIRP = TF_RECCHIRP./TF_CHIRP;
 h_chirp = ifft(H_CHIRP);
 
 
-%% Slet
-% ABE!
+%% Sektion til formatering
+% Linje til formatering
 
 % Plot
 f_TF_chirp = (0:Nchirp-1)*(Fs/Nchirp);
@@ -192,8 +192,8 @@ SIM_NOISE = fft(Sim_noise);
 P_SIM_NOISE = abs(SIM_NOISE).^2/n_noise;
 
 
-%% Slet
-% ABE!
+%% Sektion til formatering
+% Linje til formatering
 
 % Plot
 % Normaliser af x-aksen så signalerne kan plottes som frekvens
@@ -233,8 +233,8 @@ SIM_CHIRP = fft(Sim_chirp);
 P_SIM_CHIRP = abs(SIM_CHIRP).^2/n_chirp;
 
 
-%% Slet
-% ABE!
+%% Sektion til formatering
+% Linje til formatering
 
 % Plot
 mid_P_SIM_MUSIC_CHIRP = smoothMag(P_SIM_MUSIC_CHIRP',499);
@@ -272,8 +272,8 @@ LMS_music = filter(koef_music,1,Sim_music_noise);
 % soundsc(LMS_music,Fsorig);
 
 
-%% Slet
-% ABE!
+%% Sektion til formatering
+% Linje til formatering
 
 % Plot
 figure;
@@ -293,8 +293,8 @@ LMS_chirp = filter(koef_chirp,1,Rec_chirp);
 % soundsc(LMS_chirp,Fs);
 
 
-%% Slet
-% ABE!
+%% Sektion til formatering
+% Linje til formatering
 
 % Plot
 figure;
