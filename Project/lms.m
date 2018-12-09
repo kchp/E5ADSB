@@ -18,12 +18,12 @@ e=zeros(1,N);
 for n=M:N-1
     % xk=flipud(x(k-(M-1):k));      % update delay line
     x_dl=x(n:-1:n-M+1);                % fill delay line  
-    y(n)=x_dl'*W(:,n);                  % y(n)
-    e(n)=d(n)-y(n);                     % e(n)=d(n)-y(n)
-    W(:,n+1)=W(:,n)+2*mu*e(n)*x_dl;     % update coefficients
+    y(n)=x_dl'*W(:,n);              % y(n)
+    e(n)=d(n)-y(n);                 % e(n)=d(n)-y(n)
+    W(:,n+1)=W(:,n)+2*mu*e(n)*x_dl; % update coefficients
     
 end
-x_dl=x(N:-1:N-M+1);                % fill delay line
+x_dl=x(N:-1:N-M+1);                 % fill delay line
 y(N)=x_dl'*W(:,N);                  % y(n)
 e(N)=d(N)-y(N);                     % e(n)=d(n)-y(n)
 w=W(:,N);

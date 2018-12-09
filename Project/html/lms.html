@@ -1,0 +1,136 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>lms</title><meta name="generator" content="MATLAB 9.4"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2018-12-10"><meta name="DC.source" content="lms.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><pre class="codeinput"><span class="keyword">function</span> [w,W,J,e,y]=lms(x,d,mu,M,wi)
+<span class="comment">% LMS algorithm for M'th order adaptive FIR filter</span>
+<span class="comment">%   Ref: Poularikas and Ramadan, Adaptive Filtering Primer with Matlab</span>
+<span class="comment">%   Modified by KPL, 2018-11-08</span>
+
+<span class="keyword">if</span> nargin&lt;5
+    wi=zeros(M,1);  <span class="comment">% default initial coefficient guess</span>
+<span class="keyword">end</span>
+
+N=length(x);
+
+<span class="comment">% Initialization</span>
+W=zeros(M,N);       <span class="comment">% M filter coeffs, N iterations</span>
+W(:,1)=wi;          <span class="comment">% initial guess, default zero vector</span>
+y=zeros(1,N);
+e=zeros(1,N);
+
+<span class="keyword">for</span> n=M:N-1
+    <span class="comment">% xk=flipud(x(k-(M-1):k));      % update delay line</span>
+    x_dl=x(n:-1:n-M+1);                <span class="comment">% fill delay line</span>
+    y(n)=x_dl'*W(:,n);              <span class="comment">% y(n)</span>
+    e(n)=d(n)-y(n);                 <span class="comment">% e(n)=d(n)-y(n)</span>
+    W(:,n+1)=W(:,n)+2*mu*e(n)*x_dl; <span class="comment">% update coefficients</span>
+
+<span class="keyword">end</span>
+x_dl=x(N:-1:N-M+1);                 <span class="comment">% fill delay line</span>
+y(N)=x_dl'*W(:,N);                  <span class="comment">% y(n)</span>
+e(N)=d(N)-y(N);                     <span class="comment">% e(n)=d(n)-y(n)</span>
+w=W(:,N);
+J=e.^2; <span class="comment">% MSE</span>
+</pre><pre class="codeoutput error">Not enough input arguments.
+
+Error in lms (line 7)
+    wi=zeros(M,1);  % default initial coefficient guess
+</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2018a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+function [w,W,J,e,y]=lms(x,d,mu,M,wi)
+% LMS algorithm for M'th order adaptive FIR filter
+%   Ref: Poularikas and Ramadan, Adaptive Filtering Primer with Matlab
+%   Modified by KPL, 2018-11-08
+
+if nargin<5
+    wi=zeros(M,1);  % default initial coefficient guess
+end
+
+N=length(x);
+
+% Initialization
+W=zeros(M,N);       % M filter coeffs, N iterations
+W(:,1)=wi;          % initial guess, default zero vector
+y=zeros(1,N);
+e=zeros(1,N);
+
+for n=M:N-1
+    % xk=flipud(x(k-(M-1):k));      % update delay line
+    x_dl=x(n:-1:n-M+1);                % fill delay line  
+    y(n)=x_dl'*W(:,n);              % y(n)
+    e(n)=d(n)-y(n);                 % e(n)=d(n)-y(n)
+    W(:,n+1)=W(:,n)+2*mu*e(n)*x_dl; % update coefficients
+    
+end
+x_dl=x(N:-1:N-M+1);                 % fill delay line
+y(N)=x_dl'*W(:,N);                  % y(n)
+e(N)=d(N)-y(N);                     % e(n)=d(n)-y(n)
+w=W(:,N);
+J=e.^2; % MSE
+##### SOURCE END #####
+--></body></html>

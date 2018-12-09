@@ -4,7 +4,7 @@
 [Recorded_chirp,Fschirp] = audioread('RecLinChirp.wav');
 LMS_chirp = audioread('LMS_chirp.wav');
 [Simulated_music,Fsmusic] = audioread('Simulated_music.wav');
-LMS_music = audioread('LMS_music.wav');
+LMS_music = csvread('LMS_music.csv');
 
 %% Afspil optaget chirp
 

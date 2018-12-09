@@ -269,7 +269,7 @@ Mu = 0.01;  % Stepsize
 M = 20;     % Antal koefficienter
 [koef_music,W,J,~,~] = lms(Sim_music_noise,music,Mu,M);
 LMS_music = filter(koef_music,1,Sim_music_noise);
-% soundsc(LMS_music,Fsorig);
+% soundsc(LMS_music,Fsmusic);
 
 
 %% Sektion til formatering
